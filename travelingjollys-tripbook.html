@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Traveling Jollys — Trip Log</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --asphalt: #24272b;
+    --asphalt-2: #2f3338;
+    --paper: #f1ece0;
+    --paper-2: #e8e1d0;
+    --highway-yellow: #e8b23c;
+    --rust: #b6552f;
+    --pine: #4f6a52;
+    --denim: #35516b;
+    --ink: #24272b;
+    --muted: #7a7469;
+    --line: #d8cfb9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--asphalt);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(255,255,255,0.03), transparent 40%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    padding:64px 24px 40px;
+    text-align:center;
+    border-bottom:6px solid var(--highway-yellow);
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.35)),
+      repeating-linear-gradient(90deg, transparent 0 78px, rgba(232,178,60,0.5) 78px 82px, transparent 82px 160px);
+    background-position: center 90%;
+    background-size: 100% 6px, 100% 100%;
+    background-repeat: no-repeat, no-repeat;
+  }
+  .hero-sign{
+    display:inline-block;
+    background:var(--pine);
+    border:4px solid var(--paper);
+    border-radius:6px;
+    padding:6px 22px;
+    font-family:'Oswald',sans-serif;
+    letter-spacing:2px;
+    font-size:13px;
+    text-transform:uppercase;
+    color:var(--paper);
+    margin-bottom:22px;
+    box-shadow:0 4px 0 rgba(0,0,0,0.3);
+  }
+  .hero h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    font-size:clamp(36px,7vw,68px);
+    margin:0 0 6px;
+    color:var(--paper);
+  }
+  .hero h1 span{color:var(--highway-yellow);}
+  .hero p.sub{
+    font-family:'JetBrains Mono',monospace;
+    color:#b9b2a3;
+    font-size:14px;
+    margin:0 0 28px;
+    letter-spacing:0.5px;
+  }
+  .odometer-row{
+    display:flex;
+    justify-content:center;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .odo{
+    background:var(--asphalt-2);
+    border:2px solid #45494f;
+    border-radius:8px;
+    padding:10px 18px;
+    min-width:90px;
+  }
+  .odo .num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:26px;
+    font-weight:600;
+    color:var(--highway-yellow);
+    display:block;
+  }
+  .odo .label{
+    font-size:10px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:#9a9488;
+  }
+
+  /* ---------- CONTROLS ---------- */
+  .controls-wrap{
+    background:var(--paper);
+    color:var(--ink);
+    padding:22px 24px;
+    position:sticky;
+    top:0;
+    z-index:50;
+    border-bottom:3px solid var(--ink);
+  }
+  .controls{
+    max-width:1100px;
+    margin:0 auto;
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    align-items:center;
+  }
+  .search-box{
+    flex:1 1 260px;
+    position:relative;
+  }
+  .search-box input{
+    width:100%;
+    padding:11px 14px 11px 38px;
+    border:2px solid var(--ink);
+    border-radius:4px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .search-box::before{
+    content:"⚲";
+    position:absolute;
+    left:12px;
+    top:50%;
+    transform:translateY(-50%) rotate(45deg);
+    font-size:15px;
+    color:var(--muted);
+  }
+  select#locationFilter{
+    padding:11px 14px;
+    border:2px solid var(--ink);
+    border-radius:4px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .cat-toggles{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .cat-btn{
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    font-size:12.5px;
+    font-weight:600;
+    padding:9px 16px;
+    border-radius:20px;
+    border:2px solid var(--ink);
+    background:transparent;
+    color:var(--ink);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .cat-btn.active[data-cat="Hotels"]{background:var(--denim);border-color:var(--denim);color:#fff;}
+  .cat-btn.active[data-cat="Eats"]{background:var(--rust);border-color:var(--rust);color:#fff;}
+  .cat-btn.active[data-cat="Entertainment"]{background:var(--pine);border-color:var(--pine);color:#fff;}
+  .result-count{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    max-width:1100px;
+    margin:12px auto 0;
+    padding-top:2px;
+  }
+
+  /* ---------- GRID ---------- */
+  .grid-wrap{
+    max-width:1100px;
+    margin:0 auto;
+    padding:36px 24px 80px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+    gap:22px;
+  }
+  .card{
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:10px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    box-shadow:0 6px 18px rgba(0,0,0,0.35);
+    border:1px solid var(--line);
+  }
+  .card .stub{
+    position:absolute;
+    top:14px;
+    right:-1px;
+    background:var(--highway-yellow);
+    color:var(--ink);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    font-weight:600;
+    padding:4px 10px 4px 12px;
+    border-radius:4px 0 0 4px;
+    z-index:2;
+  }
+  .card img.thumb{
+    width:100%;
+    height:170px;
+    object-fit:cover;
+    display:block;
+    border-bottom:3px solid var(--ink);
+  }
+  .card .no-photo{
+    width:100%;
+    height:90px;
+    background:repeating-linear-gradient(135deg, var(--paper-2), var(--paper-2) 10px, #ddd4bd 10px, #ddd4bd 20px);
+    border-bottom:3px solid var(--ink);
+  }
+  .card-body{
+    padding:16px 18px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    flex:1;
+  }
+  .card-title{
+    font-family:'Oswald',sans-serif;
+    font-size:19px;
+    font-weight:600;
+    line-height:1.2;
+    margin:0;
+  }
+  .card-meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .loc-chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .loc-chip{
+    font-size:11px;
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    padding:3px 9px;
+    border-radius:12px;
+    color:#54503f;
+  }
+  .cat-chips{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .cat-chip{
+    font-size:10.5px;
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    font-weight:600;
+    padding:3px 9px;
+    border-radius:3px;
+    color:#fff;
+  }
+  .cat-chip.Hotels{background:var(--denim);}
+  .cat-chip.Eats{background:var(--rust);}
+  .cat-chip.Entertainment{background:var(--pine);}
+
+  .excerpt{
+    font-size:13.5px;
+    line-height:1.5;
+    color:#4a4638;
+    margin:0;
+    display:-webkit-box;
+    -webkit-line-clamp:3;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .card-footer{
+    margin-top:auto;
+    display:flex;
+    gap:10px;
+    padding-top:6px;
+  }
+  .btn-read{
+    flex:1;
+    text-align:center;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    font-size:12.5px;
+    font-weight:600;
+    padding:9px;
+    border-radius:5px;
+    border:none;
+    cursor:pointer;
+  }
+  .btn-source{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:9px 12px;
+    border-radius:5px;
+    border:2px solid var(--ink);
+    background:transparent;
+    color:var(--ink);
+    text-decoration:none;
+    font-size:13px;
+  }
+  .btn-icon{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:34px;
+    padding:0;
+    border-radius:5px;
+    border:2px solid var(--ink);
+    background:transparent;
+    color:var(--ink);
+    cursor:pointer;
+    font-size:14px;
+  }
+  .btn-icon.danger:hover{background:#b23b3b;border-color:#b23b3b;color:#fff;}
+
+  /* ---------- ADMIN BAR ---------- */
+  .admin-bar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .admin-btn{
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    font-size:12.5px;
+    font-weight:600;
+    padding:10px 16px;
+    border-radius:5px;
+    border:2px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    cursor:pointer;
+  }
+  .admin-btn.secondary{
+    background:transparent;
+    color:var(--ink);
+  }
+
+  /* ---------- FORM ---------- */
+  .form-grid{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .form-row label{
+    display:block;
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    font-size:11.5px;
+    letter-spacing:0.5px;
+    color:var(--muted);
+    margin-bottom:5px;
+  }
+  .form-row input[type=text],
+  .form-row input[type=date],
+  .form-row textarea{
+    width:100%;
+    padding:10px 12px;
+    border:2px solid var(--line);
+    border-radius:5px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .form-row textarea{min-height:140px;resize:vertical;font-family:'Inter',sans-serif;}
+  .form-two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .form-cat-check{display:flex;gap:16px;flex-wrap:wrap;padding-top:4px;}
+  .form-cat-check label{display:flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;text-transform:none;font-size:13.5px;color:var(--ink);}
+  .form-actions{display:flex;gap:10px;justify-content:flex-end;padding-top:6px;}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:4px;}
+
+  .empty-state{
+    text-align:center;
+    padding:80px 20px;
+    color:#8b8577;
+  }
+  .empty-state .big{
+    font-family:'Oswald',sans-serif;
+    font-size:24px;
+    color:var(--paper-2);
+    margin-bottom:8px;
+  }
+
+  /* ---------- MODAL ---------- */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(20,20,20,0.75);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    padding:40px 16px;
+    z-index:100;
+    overflow-y:auto;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--paper);
+    color:var(--ink);
+    max-width:680px;
+    width:100%;
+    border-radius:10px;
+    overflow:hidden;
+    position:relative;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  }
+  .modal-close{
+    position:absolute;
+    top:14px;
+    right:14px;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    font-size:16px;
+    cursor:pointer;
+    z-index:5;
+  }
+  .modal-photos{
+    display:flex;
+    gap:2px;
+    overflow-x:auto;
+  }
+  .modal-photos img{
+    height:220px;
+    flex:0 0 auto;
+    object-fit:cover;
+  }
+  .modal-body{
+    padding:26px 28px 32px;
+  }
+  .modal-body h2{
+    font-family:'Oswald',sans-serif;
+    font-size:26px;
+    margin:0 0 10px;
+  }
+  .modal-body .modal-content-text{
+    white-space:pre-line;
+    font-size:14.5px;
+    line-height:1.65;
+    color:#3c3830;
+  }
+  .modal-link{
+    display:inline-block;
+    margin-top:18px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--denim);
+  }
+
+  footer{
+    text-align:center;
+    padding:30px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:#6d6a60;
+  }
+
+  @media (max-width:600px){
+    .controls{flex-direction:column;align-items:stretch;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-sign">Est. Somewhere on I-90</div>
+  <h1>Traveling <span>Jollys</span></h1>
+  <p class="sub">// A LOG OF ROUTES DRIVEN, ROOMS SLEPT IN, AND PLATES CLEARED //</p>
+  <div class="odometer-row" id="odometerRow"></div>
+</div>
+
+<div class="controls-wrap">
+  <div class="controls">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search trips, towns, restaurants...">
+    </div>
+    <select id="locationFilter">
+      <option value="">All Locations</option>
+    </select>
+    <div class="cat-toggles" id="catToggles">
+      <button class="cat-btn" data-cat="Hotels">Hotels</button>
+      <button class="cat-btn" data-cat="Eats">Eats</button>
+      <button class="cat-btn" data-cat="Entertainment">Entertainment</button>
+    </div>
+    <div class="admin-bar">
+      <button class="admin-btn" id="addTripBtn">+ Add Trip</button>
+      <button class="admin-btn secondary" id="exportBtn">Export</button>
+      <button class="admin-btn secondary" id="importBtn">Import</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none;">
+    </div>
+  </div>
+  <div class="result-count" id="resultCount"></div>
+</div>
+
+<div class="grid-wrap">
+  <div class="grid" id="grid"></div>
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <div class="big">No trips match that combo.</div>
+    <div>Try clearing a filter or searching a different town.</div>
+  </div>
+</div>
+
+<footer>TRAVELINGJOLLYS.BLOGSPOT.COM — REFORMATTED FOR EASIER BROWSING</footer>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+const SEED_POSTS = [{"title": "ALL Eats", "date": "2026-03-30", "link": "https://travelingjollys.blogspot.com/2026/03/all-eats.html", "content": "3/29/2026\nPocatello - The Palate\n had the Hamburger and a Brisket sandwich. Burger was good, Brisket sandwich was mostly fat and the bbq wasn't too good. Plain/greasy fries. Small place in old town.", "images": [], "labels": [], "location": ["Pocatello, ID"], "categories": ["Eats"], "pid": "2026-03-30-all-eats"}, {"title": "March 2026-Trip to Sun Valley -Stanley ID -Sawtooth Mountains and Jackson Hole", "date": "2026-03-22", "link": "https://travelingjollys.blogspot.com/2026/03/march-2026-trip-to-sun-valley-stanley.html", "content": "Started trip via Idaho Falls onto Sun Valley then to Stanley. Sun Valley was a busy , some snow there but not at the end of ski season. We only ate there and nothing else. Mexican place that was a train car. Looked unique. Authentic mexican, mine wasn't too flavorful at all. Drove on toward Stanley via scenic drive which was nice. No snow / ice on the road just sides of the road. Nice scenery. Stayed at the Mountain Village Inn in Stanley (not expensive at all). Little noisy because of being in between two rooms and the heater worked but was old and doesn't have much of a temp control, got really hot at night. There is the Stanley and Redfish lake, we didn't hike to either as it was 3.2 miles one way. The road was closed for cars. Didn't really do much here other than a short drive. Then on toward Challis. The drive leaving Stanley at the Sawtooth/Challis Forest was really nice. The Salmon river winds most of the way with plenty of stops and camping areas. Stopped at a couple areas with hot springs running into the river.\n\nDidnt do anything at Challis (really small) but eat at the smoked bbq (good) and pickup something at Family Dollar. Drove on toward Jackson from here.\n\nEats\n\nMountain Village Restaurant -only ate breakfast but very good.\n\nSmoked bbq in Challis (good)\n\nPretty long drive, not a lot of scenery. INL has a large space in this area. \n\nJackson Hole\n\nStays\n\n Flat Creek Inn (Clean, Not expensive) would stay here again. Next to Elk Refuge\n\n Eats\n\n  Sidewinders Grill in Wilson (toward Teton village)-good pizza. They have pizza, burgers, etc.\n\n  Persephone Bakery - Expensive as all places here but really good Egg Sandwich and Lime croissant dessert. Good coffee (Chell ate same thing here twice)\n\nMuseum - Chell at steak sandwich here and said it was good. Good   coffee from snake river co.\n\nMostly just drove around to some usual places. One new place was down Gross Ventre road right pass Kelly, etherton camp I believe, there are two camps one was 5.5 miles and the other was 10 miles but was closed. Nice little drive, no snow, some steep inclines. Only place I saw some big horn sheep right at the end of the 5 miles side of mountain. Lake was frozen, small camp at bottom.\n\nSaw a few moose down gross ventre rd, no big antlers this time of year. Saw a ton of Elk. Picked up coffee from the snake river roasting co. in the square and headed back to Pocatello via normal swan valley route.", "images": [], "labels": [], "location": ["Sun Valley, ID", "Stanley, ID", "Jackson Hole, WY"], "categories": ["Hotels", "Eats", "Entertainment"], "pid": "2026-03-22-march-2026-trip-to-sun-valley-stanley-id-sawtooth"}, {"title": "Stay in Salt Lake City for the Night", "date": "2026-01-06", "link": "https://travelingjollys.blogspot.com/2026/01/stay-in-salt-lake-city-for-night.html", "content": "December 24-31st.\n\nWent to Pocatello for Christmas Holidays, stayed a week. Took bus back  to Salt Lake. Stopped about 6 stops total I believe, more was on the route, but didn't stop at all.\n\nHotel: Hyatt Place at Airport\n\n  This was one of the cheapest this date. Nice Hotel, large room with king bed, fridge/microwave. No issues. 1.4 miles to airport, has a shuttle that runs between 3 hotels. No issues, took about 20-25 minutes to p/up after calling.\n\nEats:\n\n  Took a lyft to the City Center Mall. Ate at \"Taste of Red Iguana\" in the food court. Not the selection of the restaurant, but pretty good. Walked over to the Temple Square to see Christmas Decorations. Really Nice. Got a Lyft back to hotel.", "images": [], "labels": [], "location": ["Salt Lake City, UT"], "categories": ["Hotels", "Eats"], "pid": "2026-01-06-stay-in-salt-lake-city-for-the-night"}, {"title": "Dauphin Island - July 2025", "date": "2025-07-13", "link": "https://travelingjollys.blogspot.com/2025/07/dauphin-island-july-2025.html", "content": "Travel Dates July 2-5\n\nMe and Chell\n\nHotel: Gulf Breeze Motel\n\n  No frills, clean motel with mini fridge, no microwave (in downstairs common area), small table in room, nice people/service. I'd stay there again if looking for good prices.\n\nEats\n\nCaptain Snappers\n  Blackened Grouper, red potatoes, house salad\n  blackened shrimp, slaw$72 before tips     Not very good, fish just ok, potatoes not done, slow service but ok (friendly), Chell said her shrimp and slaw was good.\nSkinners  Best Fresh seafood we've had on the island. We both got steamed shrimp for lunch and I got red fish and she got shrimp again with side corn and potatoes. One mild and one spicy. Really good2 shrimp plates $27\nLighthouse Bakery  I didn't get anything here but Chell says everything she got was good\n\nElectric Bikes Rental (ebikes) These were pretty cool, Cost $130 for 2 bikes for a day, they could do a little better on communication when dropping off and picking up. The bikes themselves were solid, good performance. Seats a little hard to ride on for more than an hour, not terrible but not soft like some of the gel type seats\n*They did a big fireworks show on July 4th, good job almost across the street from motel near beach.\nBellingrath Gardens This was nice, we did a tour of the house this time, pretty impressive, nice tour guide, grounds were beautiful as usual. Asian section was closed for maintenance", "images": [], "labels": [], "location": ["Dauphin Island, AL"], "categories": ["Hotels", "Eats"], "pid": "2025-07-13-dauphin-island-july-2025"}, {"title": "May 16 2025-Trip to Pocatello & Yellowstone", "date": "2025-05-26", "link": "https://travelingjollys.blogspot.com/2025/05/may-16-2025-trip-to-pocatello.html", "content": "May 16 2025-Trip to Pocatello & Yellowstone\n\nAte at the grille in Treemonton on way to Pocatello \n\nGood food and service \n\nJackson hole \n\nLiberty burger\n\n  Awesome burger, onion rings and sweet potato fries all were\n\nReally good\n\nFire pizza\n\n    Good pizza, hummus not as flavorful as last time\n\nWest Yellowstone \n\n   Firehole bbq\n\n     Expensive, small, brisket was dry, beans not good\n\nHotel\n\nComfort Suites Airport\n\n171 N. 2100 W., Salt Lake City, UT\n\nquick shuttle from airport, provides paid uber for rides before 4am\n\nCheesecake factory \n\n Shelias salad \n\n Parmesan chicken \n\n Good. $50 for two with water", "images": [], "labels": [], "location": ["Pocatello, ID", "Jackson Hole, WY", "West Yellowstone, MT"], "categories": ["Hotels", "Eats"], "pid": "2025-05-26-may-16-2025-trip-to-pocatello-yellowstone"}, {"title": "West Yellowstone 2-21-2025", "date": "2025-02-22", "link": "https://travelingjollys.blogspot.com/2025/02/west-yellowstone-2-21-2025.html", "content": "Hotel\n\n Gray Wolf Inn - quick checking $125 night. No issue with room, only issue was kids running floor above us for a few hours.\n\nEats - Buffalo Bar -  busy place but decent service. Had the cowboy burger (bison), Chell had chicken sandwich. Also buffalo chili con Queso with chips, all were pretty good.\n\nWe did the Yellowstone Coach tour last minute, they had a couple people cancel. - Back country adventures, they picked us up form Hotel. White tour bus. It was a tour into the park to Old Faithful. Started about 8:15 - 4:00pm. Park was completely covered in snow. We saw several Bison, few coyotes, wolves. Great day. Only issue I had was the tour Guide we had (Myron) older guy Got us there and back no issue but didn't give much direction and also chatted more about history and not enough stopping to look at the animals. I noticed the Yellow Buses (yellowstone adventures) seemed to stop close to animals and for longer. Overall though, beautiful day. Cold but beautiful. Cost was $410.00 for both of us.\n\nWe really wanted to do the Snow Mobile w/Guide tour. Looked really fun. They will provide a oversuit for I believe $20 extra. NEED TO BOOK THIS WELL IN ADVANCE", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjeetcYhb94fhQ6iUkF9EV1hfO6rHmTdrlnkk9PNlg62wLzZqDEbvZjuyrk_lMBtpRIpURLn-ym-yq4EUMyUVJIKEw0i6QLSGvHx7_1DbwDi1csWYleNT_tb0TAfla1pz5oPdenkMZ312TkcDaDsBl-ara64FZqJsI0crwErJjKq326i0RLGjxvPQNUCWi8/s320/IMG_9386.JPG"], "labels": [], "location": ["West Yellowstone, MT"], "categories": ["Hotels", "Eats", "Entertainment"], "pid": "2025-02-22-west-yellowstone-2-21-2025"}, {"title": "Lockhart TX", "date": "2024-08-04", "link": "https://travelingjollys.blogspot.com/2024/08/lockhart-tx.html", "content": "Hotel\n\n  Best Western (Nice room, easy check-in) , only 1.8 miles from the Irby Office. No issues at all\n\n   *stayed here Tues - Thur for work (re-ip) at lockhart office. DON'T drive next time. Traffic is terrible as  you near Houston.\n\n  Eats\n\n  Terry Blacks BBQ: Good smoked meats, tasty veggies.\n\n   Chisolm bbq: drive thru, good brisket, cobbler.", "images": [], "labels": [], "location": ["Lockhart, TX"], "categories": ["Hotels", "Eats"], "pid": "2024-08-04-lockhart-tx"}, {"title": "West Yellowstone", "date": "2024-08-04", "link": "https://travelingjollys.blogspot.com/2024/08/west-yellowstone.html", "content": "Hotel/Inn\n\nMoose Creek Inn (West Yellowstone)\nGreat Location, Great room, Terrible parking. Not much space*Chell went here by herself", "images": [], "labels": [], "location": ["West Yellowstone, MT"], "categories": ["Hotels"], "pid": "2024-08-04-west-yellowstone"}, {"title": "Yellowstone and Idaho Trip July 2024", "date": "2024-07-14", "link": "https://travelingjollys.blogspot.com/2024/07/yellowstone-and-idaho-trip-july-2024.html", "content": "Drove to west Yellowstone (town) from Pocatello- started about 4:30am and got to entrance about 7:15  am, starting to pack in the cars but not too bad\n\nStops \n\n Firehole falls Loop \n   beautiful drive and scenery Old Faithful \n\n West thumb and around Yellowstone lake\n\n  Up past canyon village to the falls , artist Point, Grand Canyon ( really nice falls )\n\n  Then west toward mammoth hot springs and into Gardiner MT were we stayed\n\n-on the way back from Gardiner to Jackson Hole \n\nGrant village \n  Nice general store, decent visitors center , also has restaurant but didn\u2019t try Gardiner MT\n\n  Small town, you can walk most of Town. Most places to eat are expensive, very little parking anywhere, Yellowstone river is really nice and runs right behind our motel. \n\nFlying Pig rafting \n\n  4 hour trip -  July 6 , fairly calm waters , not a lot of info before hand , we just wore swim shorts and long sleeve quick dry shirt and were fine . Only took about 1 1/2 hours for trip after starting. No issues really, Good guide. They take pics you can buy a package for $48 (not great but ok if you don't bring a camera)\n\nWalking distance to absaroka lodge were we stayed. Really didn't need to bring anything as we were pretty dry by the time we were finished. They have a small box for keys and phones they keep onsite.\n\nEating places \n\n Antler Grill.       - Gardiner MT\n\n   Over priced food\n   Burger greasy \n   bar atmosphere / bad music\nEat.       (Yes that\u2019s the name of it) - walking distance from Hotel in Gardiner MT\n  overpriced like all food here but Food was pretty good, roast beef and elk burger. $48\n   Tea was not good    $5 each coke bottle  small inside and outside tables\nWonderland  (walking distance) Gardiner MT\n  Best food and service by far I think - actual chef\n  Montana burger w/ side of chili \n  Flat bread \n  Regular burger w / sweet fries\nTotal $73            *note they add some type of resort tax on items at all these placesJackson hole\n\n  Mary Piglets (late lunch)\n   Good not great, not that fresh \n   Salsa was great Utah - Eats\n\nStopped at a sandwich place called \nGrist old mill\n  Tuna and chicken sandwich. Tuna was fine, Chell said chicken taste like out of a can. No coke products or Tea so I wouldn't go back. For the price it was fine but nothing great.\nRed Iguana (original) not far from Radisson Hotel  Great Service  Good food  Got deserts to go. Not great desserts for me (cheese cake and Flan)\n Absaroka Lodge ((motel) in Gardiner MT\n   Nice views out back of Yellowstone river      and town\n   Walking distance to town square. \n   We got a kitchenette, nice room , window AC unit . Small but nice balcony view. AC not great \n   WiFi terrible \nRadisson hotel\n  Check in slow  \n  Room is fine \n  AC not working until about 9pm. \n   Wound up not using shuttle (runs at top of every hour) Chell took me, Not hard to get to terminal", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh9mg5OLHHEx7OepAJAIBX_R2nK9IJbHG1PB_zvSEv13VteAL8zxUXWF-jhMRtmWOeA4R7iCtNXg5V9CntwzAaKZza-DCDoXn1-uN87OAfmi9SJ8_TnmC5LSntloa_fdq4w7Pq5sG3MqRwy8W5XpBx9euzACQvPsgl4v_iLHOAzqQXMVCKoWPWwNde25ZTU/s320/IMG_7958.jpg"], "labels": [], "location": ["Yellowstone National Park", "Jackson Hole, WY"], "categories": ["Entertainment"], "pid": "2024-07-14-yellowstone-and-idaho-trip-july-2024"}, {"title": "Clyde's cabin Sevierville TN", "date": "2024-03-18", "link": "https://travelingjollys.blogspot.com/2024/03/clydes-cabin-sevierville-tn.html", "content": "Trip to Clyde's Cabin - Sevierville TN\n\nWent to Clyde's to help with building his deck addition. Michael, Karen with kids. Me and Landon went this trip  3/13/24 and stayed until Sunday. We mostly stayed at the cabin, not too eventful but we did finish the deck. Only place we ate at was the Apple Barn restaurant, late lunch. Lunch was good but not great, no sweet potatoes that Landon wanted. Got a pie and couple things from the bakery which were good. Maybe the Grill is better not sure.\n\nWe road again to the rolling fork loop, didn't see any animals. We were going to go to Clingmans dome and do the hike nearby but the road was closed so we went to the 'Alum caves trail' which was very busy with cars. Found a parking spot. The hike was 4.6 miles total, it says moderate but it has about a 1300' elevation gain so it's definitely a bit strenuous. I believe it was about 5500' elevation where we stopped at the 2.3 mile concave. It was a really nice trail though with the Stream pretty much alongside the trail 2/3 of the way. I enjoyed it. We were tired when done but glad we hiked it. Note (wear some good hiking shoes or boots) as there are a lot of rocks and slippery spots.\n\nGood to see Clyde. He was hospitable as always. Stopped at buccees on the way back, clean as always, brisket sandwich was too fatty for me.", "images": ["https://blogger.googleusercontent.com/img/a/AVvXsEhi5AyoDJjDYOJkYlcSye9y7M09XyWzKf1U9ddj902fUR_nYfjRdT9j9eIBHkBgFL6BmmfB_Akfi3BtivOZNaQN20pVDGTAXEEhwLD3JijiMI6_ybsuHSu5E2-nwmiM6mX2Svh7rPRiOVBZ6-Jeu2Y4W1aZNPc78zmJunQb6Z8-gSq_YInc20YLkpnW03F4"], "labels": [], "location": ["Sevierville, TN"], "categories": ["Eats"], "pid": "2024-03-18-clyde-s-cabin-sevierville-tn"}, {"title": "Trip to Jackson Hole - November 2023", "date": "2023-11-26", "link": "https://travelingjollys.blogspot.com/2023/11/to-jackson-hole-november-24-2023-flight.html", "content": "Trip to Jackson Hole November 24 2023\n\nFlight to SLC via DFW. Long but best flight to slc. Chell picked me up from Airport. Pickup right outside the door after getting bags (private car pickup)\n\nStayed the night in Pocatello ID. Drove to Jackson Hole on Friday 11/24. No huge issues driving, snowed in Pocatello but pretty good main roads and Interstate. Not bad into Jackson Hole, some ice, went the Swan Valley &gt; Alpine direction to Hoback Junction avoiding Teton pass. \n\nStayed at Elk Refuge Inn (again) same room 104. Same as last trip, nice clean room. No issues, least expensive of the places I searched, The Lodge, Wyoming Inn. May consider Homewood Suites next trip which is one block over from Jackson square.\n\nPlaces we ate:\n\nMerry Piglets (again) - had the mexi-chop salads (extra Lemon Vinaigrette, really good)\n\nTeton Pizza - first time to try. Right on the square (old theater bldg). Good pizza. Got the classic cheese w/chicken and squashed. Preferred the squashed just because more flavors. Hummus starter was also good.\n\nLiberty Burger - had West burger and Classic Liberty. Both were great. Not much seating but good burgers and shakes and sweet potato fries\n\nMuseum of Art -First time to actually go inside ($18 per person) Nice little museum. Has a restaurant inside. You can go to the restaurant without paying for the museum. Had a really good burger and chicken sandwich. Expensive like most places here, but good.", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgW07jhi5dbfKDDSOb7I30L2DsVGTqfou1OfIyhbI7UM11bdfZ47liSHslTsqOziWp67Cysz72ZdAe0AuPTjJxriUrUg8brCajBk_9roxRfQESvbwoYBkzar1TN32cN_bINNtqLJnE0ZXg0qOfOrMMRRY6nMi5pvKxmpRe2mNjKlE1KPDZEocwVaS6A9XKY/w480-h304/IMG_6743.JPG"], "labels": [], "location": ["Jackson Hole, WY"], "categories": ["Hotels"], "pid": "2023-11-26-trip-to-jackson-hole-november-2023"}, {"title": "Trip to Jackson Hole and Yellowstone October 2023", "date": "2023-10-19", "link": "https://travelingjollys.blogspot.com/2023/10/trip-to-jackson-hole-and-yellowstone.html", "content": "Trip visit Oct 12-17\n\nLandon went with me on this Trip. Chell picked us up in SLC\n\nFlew into SLC from Jackson. Long day at the airport with a couple hours layover. Full day.\n\nHotels\n\n  SLC \n\nComfort Suites - Airport (Clean, basic, sink not in the bathroom) kinda odd setup. Has airport shuttle, stayed here on the trip up and back. No issues really. Good breakfast\n\nJackson Hole\n\nSuper 8 Jackson Hole - (Less expensive option, basic but clean. Kinda tight parking) Has breakfast but didn't try it.\n\nElk Refuge Inn - (Pretty Nice Motel, seemed to be remodeled, has a laundry onsite and ice) with fridge and small kitchen area and microwave with beginning view of Elk Refuge. Close to town without the crowd.\n\nEats\n\n Salt Lake City\n\nCity Creek Mall at Salt Lake - Nice mall but the food at the Kneaders bakery was terrible.\n\nCheesecake  factory was good.\n\nJackson Hole - (Every place to eat is expensive) except the Albertsons grocery store\n\n Gun Barrell - pretty good, VERY Expensive for what you get. Nice place\n\n Liberty Burger - Good burgers, first time there was really crowded, 2nd trip not so much. Pretty good food, not as expensive as nice restaurant.\n\nJackson Drugs - burgers, sandwiches, etc. \"hand cut fries\" were really just frozen shoestring fries. Service sucked. More expensive than it should have been, especially for the lackluster food. If you want a burger go to Liberty burgers instead.\n\nMerry Piglets - bit of a let down this trip, very salty guac.  Normally Great Mexican food was just ok this time and noisy.\n\nYellowstone (old faithful) - ate at the grill, made us all feel bad and pretty expensive. Skip next time\n\n  \n\nActivities\n\nSLC\n\nDrove to City Creek Mall - Parked next to temple square. Kinda hard to get to. parking limited to  8PM. Nice mall. a Lot of construction at Temple sq. Couldn't really see anything much.\n\nYellowstone - Old Faithful, other basins, Fire drive (not sure that's the name but it's a one way loop) with some beautiful falls and views of the river.\n\nJackson Hole - Very nice, notable places were \"Moose\" rd\n\nHiking - Hike to Taggart Lake was awesome (3 mile round trip) with options to go on further to other lakes & trails. Great view. Me and Landon hiked\n\nVisitor Center near Moose was ok, small store and educational stuff. Visitor Center near Elk Refuge was bigger and better.\n\nShopping\n\n  Albertsons - best place to shop for groceries\n\n  Target - small store, not a lot there.\n\n   Lee's Tees - probably the Best for t-shirts and lots of souvenirs. \n\n   Jackson trading co. ok, more artsy stuff \n\nTrip back - drove from Jackson Hole to West Entrance. Visitor Center near south entrance had no open store or Bathrooms, only a very nasty porta potty at the marina.\n\nreally small visitor center at the West Entrance. You can get some info from a ranger but not the place if you want to find souvenirs.\n\nAte at \"big Juds\" in Ashton, ID - good food and service. Laid back diner. Big portions", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgo2nW4Aqn89x-kSLGnKoJpCKUM9dTTLRUm0xFKY3ayhrus6TlEpF-4D9TmwMKm-EljgkYxlNZH6gzg_GQO2rE2-7egrqZIVt-2h7jAiXnA8-2NRQYcRlKWKPx9qn6OpwjQpntvLg0XhsJzyyyqI8YoiKm7RJD4ZBblfZUNAx93F055jzSFE-HZKfXUCDAx/w594-h240/IMG_6342.JPG"], "labels": [], "location": ["Jackson Hole, WY", "Salt Lake City, UT"], "categories": ["Hotels", "Eats"], "pid": "2023-10-19-trip-to-jackson-hole-and-yellowstone-october-2023"}, {"title": "Washington DC", "date": "2023-09-14", "link": "https://travelingjollys.blogspot.com/2023/09/washington-dc.html", "content": "9-13-2023\n\nHotel \n\nHoliday Inn - Washington Capitol \n\nNice hotel, close to metro stand national mall, museums etc.\n\nMostly great, no free breakfast or coffee, AC on wall in room VERY loud, remote not working good, quick check-in , nice room , McDonald\u2019s right around the corner, Starbucks adjoins hotel\n\nVery limited places to eat nearby \n\n*better places to eat outside national mall area (tourist area) which you can get to easily via metro\n\nGet 3 day pass or however many days staying \n\nMetro stations- clean and convenient to places and to Reagan airport \n\nWhite House tour - cool\n\nSpace and flight museum - good\n\nNatural history museum - good\n\nMonument, Licoln memorial, war memorial (all very nice) and especially late evening or dark\n\nArlington national cemetery (impressive) changing of the guards \n\nLibrary of congress (awesome architecture)\n\nSpy museum (pretty cool) $30 a ticket \n\nAmerican history museum (great place to eat at cafeteria)\n\nEats near hotel\n\nCapitol bistro - good breakfast, expensive ( in hotel)\n\n21st amendment- decent sandwich- expensive (in hotel)\n\nStans DC diner -  kinda near white house, basement bar gill, ok \n\nFlew AA in to Reagan non stop \n\n*Next Trip I would plan on going out further to Chinatown or somewhere for eating and Pentagon or other outer places.", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhmfhQqsS6HdEFy7Ff9sYgZjtjkOinf5QteE7BKDjGfNGmuJ10W7289EAAEWEKZGJ2gHzcOgUdtrJ5z1WMOGmr5xujpz4Rc6Nu8yBofzw9yGd2f-kE21xPBfwTjFmpZ2CbW_7FAZZ8uqGjgEiJrZnf_mc4VMJvPWYl1JUGYYXRD_wa6HKK4-wk3u1lX0ZRO/w469-h240/IMG_6078.JPG"], "labels": ["Washington DC"], "location": ["Washington, DC"], "categories": ["Hotels", "Eats", "Entertainment"], "pid": "2023-09-14-washington-dc"}, {"title": "ALL Gulf Coast Trips combined", "date": "2022-12-30", "link": "https://travelingjollys.blogspot.com/2022/12/all-gulf-coast-trips-combined.html", "content": "12/29/22\n\n HOTELS\n\nThe White House  (12/29/22) - beautiful outside and mostly in. Large room but had some type knats, not a great shower, no fridge and TV guide didn't work or match guide in their book. Only stayed because rates were lower right now $125, but not as good as expected. Was a quiet room and comfortable bed (king), train comes by in the morning.\n\nHyatt Place-Biloxi- Good hotel across the street from the beach. Nothing really special. Price was $139 without upgrading to Ocean View, which I upgraded but you couldn't see the ocean. Trees were blocking the view completely. Ate at The Reef again, crawfish cornbread was awesome (July)\n\nBest Western (Oak Manor) in Biloxi.- It's directly across from the Beau Rivage. Check in was easy enough, the check-in office is right on beach blvd and the rooms are behind that. Kinda tight parking but ok. Room was clean, got a jacuzzi tub but never used it. Somewhat noisy at night but I slept ok. Chell said it was noisy. They had breakfast but I would skip if there again. Wasn't too good and it was a small crowded room. (June 2021)\n\nSouth Beach Hotel (On the Beach)-Nice hotel, rate was $157 for standard suite facing the street. Nice Room with kitchen, - can walk out of hotel to the beach. (May 2020)\n\nPLACES ATE\n\nSaltgrass in Biloxi - we had good service and food. Ribeye and crusted flounder. about $75 no appetizers or deserts\n\nReef in Biloxi , been here a few times previously, tonight the music or beating whatever it was was so annoying we really didn\u2019t enjoy it. So loud we couldn\u2019t hear each other . \n\nReef -June 2021-It was an hour wait but we walked on the beach while we waited for a text and that was fine with us. Chell ordered the seafood platter , forgot to get the grilled. It was good just fried. I got the firecracker shrimp tacos which were good. Got the smoked tuna appetizer, also pretty good.\n\nFillin station Biloxi - Small cafe style place to eat ,Had magi wrap (plain),Good grilled shrimp ,Not a favorite  (july)\n\nHook Restaurant in Pass Christian on Davis ave- good service. Goat cheese salad was great, Shrimp pasta was good and  bread pudding for dessert was awesome. Chell had a margarita that was good also. Place was a bit small and a little loud but service and food was great, parking tight, but right off hwy 90/ beach BLVD. Ate here again 12/2022 - decent not as good as first time\n\nTrippiangos-Bay St Luis  - after 25 minutes with no one taking a drink order left there and went to Cuz's Bar & Grill - Ordered a beer and margarita and a starter. Margarita was terrible and in a foam glass. \n\nWhite Cap restaurant in Gulfport - Good and friendly service but shrimp poboys were chewy so didn't really finish those. Not a favorite for beach eating..\n\nShaggys on the water- pretty good. Maybe not quite as good as the Reef but still very good, grilled Mahi Mahi  tacos and blacked shrimp.\n\nTHINGS WE DID\n\nBiloxi shrimping boat tour (sail fish)- This was ok. I was looking more for a full shrimping experience, pretty good information on shrimp but only pulled up a handful just to discuss it. Not really what I was expecting. (July)\n\nJune 2021-Spent our time either walking on the beach or  driving down beach blvd. Nice weather (Hot), best to walk on the beach early morning or at sunset. Short stay, crowded right now, pretty much everywhere. Note on condos for sale, the \"seabreeze condos\" are in a nice location. Biloxi and all the other places along the beach have grown and there's a lot of places to eat, things to do and plenty of casinos which we didn't go to.\n\nstill good as before. Drove down Beach Blvd from Biloxi to Pass Christian, drove through Bay St Louis and down Scenic Beach Blvd. On the South side was a Nicer drive, had a few restaurants and nice houses and beach access along with a couple nice RV parks and a state park. Dead Ends at a Casino. Nice and quaint.\n\nWe purchased some fresh Shrimp from Pass Christian Purchasing on Lake Harbor in Pass Christian. There was quite a few shrimp boats that sell directly to 2 or 3 vendors here and you can purchase shrimp, fish, crabs etc. Jumbo Shrimp $6 lb, friendly service.Nice day, did a good bit of driving up and down beach blvd, walked on the beach some. \n\nSTORES/NOTES\nWinn Dixie up the road on beach blvd has a nice grocery store and Wine and Spirits store (big collection)", "images": [], "labels": [], "location": ["Biloxi, MS", "Gulf Coast, MS"], "categories": ["Hotels", "Eats"], "pid": "2022-12-30-all-gulf-coast-trips-combined"}, {"title": "Driving Trip to Salt Lake", "date": "2022-10-04", "link": "https://travelingjollys.blogspot.com/2022/10/trip-to-salt-lake-chell-to-oregon.html", "content": "Driving to Salt Lake City and flying back home. Chell will spend a couple days in Pocatello and drive on to Oregon.\n\nRoute - Home &gt;Dallas &gt; Albuquerque NM &gt; to Amarillo TX &gt; Cortez Co &gt; Salt Lake\n\nPlaces we ate: mostly ate what we brought\n\n  Tequilas Mexican in Cortez Co.  - Ok Mexican food, not authentic or great.\n    Red Iguana 2 - Still good. Little tricky to get to. Not bad. Food was good as usual. Mango Mole       enchiladas were good, got the house Guac and another popular dish forgot the name. Felipe/Sirloin   tips  etc. Little spicy but good flavorPlaces we visited \n\nBucees in Dallas TX - I like bucees but this one was VERY crowded. Brisket sandwich, good but fatty\n\nMesa Verde National Park in Cortez Co. - Nice views, some very elevated areas going up to the different points which can be a little scary. \n\nArches National Park in Moab UT - Really nice park. Great views of the different arches, rocks, boulders. I'd put this one on the Top list of parks to visit. A bit elevated at the beginning but gets much flatter further up. Plenty to see. Gets REALLY busy try to be there when it opens.\n\nDrove from Moab to Salt Lake to our Hotel.\n\nHotels:\n\nCountry INN Suites - Amarillo TX  Nice Hotel. Little dated just from the carpet but good parking, pretty convenient. No issuesRetro INN - Cortez CO. - Clean Place. Harder to find than other Hotels. initial parking to check-in was odd and No drop box for keys. It's a motel. Nice, quiet just the quirks with parking and key drop off.\n\nSonesta  Simply Suites Salt Lake Airport   Nice Room / Suite - no issues checking in. Missing a pillow. Had to get a uber to airport (shuttle doesn't leave at 4:00am) No issues at all Hotel schedules and pays for the uber ride.SLC Airport - Notes - uber from hotel. Same drop off for all passengers. Go to Level2 using escalators. If you don't need a printed pass just go straight to security lines. Check in was smooth. About a 20 minute walk total to Terminal B (American). Nice Airport though\n\n*Chell will be driving to Pocatello to stay a couple days and then driving on to cottage in Oregon.", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjxCjBSgltfGYK2FiMT4R0RAfp-Es6D1AE204AATyQ1pO4WtKHFHTalerVJfR5p35PeCCdPaF_fuR2a4phBhzRsZXBbC2ZAOjg3czEcPfrqYUOoLmlT-T7ByNrMtR_zM4f7xHh7Avt4srgLfN_s1n_8vWGa4fc28ht6pOmAbpIr8IOHtC4uWWq-murUtg/w528-h237/IMG_4373.JPG", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhjMc0GUSxcTWZK3Un1TSkvKqwqM_xGyDdtVHeq9Vm1_MEBB3qLXAWm7_7UjD_63XHNblnAQ9EZqqjG2QLFV2zhoyKbp2PrJQhRX3ydmkQPzVZbGiPkwo-D6YXo3w5JBcSIrZ21foBCc52f3gMS4JrjyxxDw6ntXZtFqEXUkJOUHHexHSqE0Ozd6mj6pw/s320/IMG_4341.JPG"], "labels": [], "location": ["Salt Lake City, UT"], "categories": ["Eats"], "pid": "2022-10-04-driving-trip-to-salt-lake"}, {"title": "Smoky Mountains Trip - Gatlinburg", "date": "2022-09-19", "link": "https://travelingjollys.blogspot.com/2022/09/smoky-mountains-trip-gatlinburg.html", "content": "Went with Jess and Landon \n\nStayed at: Glenstone Lodge 504 Historic Nature Trl, Gatlinburg, TN\n\nPlaces we ate:\n\nBuccees - This truck stop/store/shop was a good surprise. Clean, Good food and lots of stuff\n\nCalhouns restaurant - Gatlinburg (dinner) - just ok, very dry burger, smoked chicken ok. Ok service\n\nBennetts BBQ - Gatlinburg (lunch)- another just ok, small amount of brisket, good bbq sauce (chain)\n\nSmith and Sons - on square - (lunch) Pretty good smoked chicken and tacos (appetizers)\n\nApplewood Restaurant - (Lunch) Pretty good food. Seemed a bit crowded when seated but good service and plenty of places/stores to look at afterwards\n\nOld Mill -pigeon forge  (breakfast) - everything was good. Food and service was great.\n\n-----------------------------------------------------------------------------------------------------------\n\nThings we did\n\nCades Cove - slow drive out but it's a beautiful drive (loop)\n\nRoaring fork nature drive - this one was closer to our hotel a really nice drive, saw bears in trees on one drive, multiple points to see the streams and a couple popular hikes, including \n\nHikes:\n\nLaurel Falls - says easy but it's pretty elevated although paved. Not my favorite\n\nGrotto Falls - great hike and waterfall at the top. (2.8 miles total)\n\nAnnakeesta park - Pretty good place. $30 admission includes skylift to top. a few shops up top and the swinging bridges which were pretty cool. Nice views. Worth the money\n\nPirates Voyage dinner/theatre - This was pretty good, very talented group, entertaining and fun.\n\nOld Smoky Moonshine - Can do a taste testing of different moonshines and purchase an assortment of moonshine themed items and of course shine.\n\n**Note - go to Visitor Center at beginning of trip next time ***", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-AxJ_UJmNBimp93xOLwcoIo_D3CYSaewlIbHXE0u9Bnx2vvq7u1iqmJ2D8XP6NL6ObAryVDeSnFHaV1hw_rrDDaMKIElCllqjGTWovmmzBJMb2L532FWT1jnNG2zH7Rv2KLTyH39cSfkdmlnsdX3ExvzoQFib84_V2sEeipQB5z3Y9joYmPg1qmIn8w/w640-h240/IMG_4276.JPG"], "labels": [], "location": ["Gatlinburg, TN"], "categories": ["Hotels", "Eats"], "pid": "2022-09-19-smoky-mountains-trip-gatlinburg"}, {"title": "Gulf Trip", "date": "2022-07-30", "link": "https://travelingjollys.blogspot.com/2022/07/gulf-trip.html", "content": "Airbnb in long beach \n\nNot bad, little cottage back at someone's home. No issues.\n\nAte at the Reef in Biloxi , been here a few times previously, tonight the music or beating whatever it was was so annoying we really didn\u2019t enjoy it. So loud we couldn\u2019t hear each other .\n\nFillin station Biloxi\n\nSmall cafe style place to eat \nHad magi wrap (plain)\nGood grilled shrimp \nNot a favorite Biloxi shrimping boat tour (sail fish)\n\n This was ok. I was looking more for a full shrimping experience, pretty good information on shrimp but only pulled up a handful just to discuss it. Not really what I was expecting.", "images": [], "labels": [], "location": ["Biloxi, MS", "Long Beach, MS"], "categories": ["Hotels", "Eats", "Entertainment"], "pid": "2022-07-30-gulf-trip"}, {"title": "Memphis / Olive Branch Trip", "date": "2022-07-24", "link": "https://travelingjollys.blogspot.com/2022/07/memphis-trip.html", "content": "Memphis Riverboat cruise \n\nNot too impressed with this one, easy enough to get to, near welcome center. Good check in, decent concessions, but got really Loud and felt more like a club than a ride/tour\n\nMemphis Zoo\n\nNice zoo, some animals not there but it was hot , overall a good visit if you haven\u2019t been here. \n\nEats\n\nMiss Pablo\u2019s in olive branch\n\nHad a regular large menu and a small limited authentic menu, ordered from that and it was good,  it wasn't good as red iguana but good\n\nCorky's bbq\n\nNot very good as far as bbq goes, hard rolls\n\nMemphis barbecue company \n\nBest BBQ we had while on this trip although we didn't eat at many places. One negative was they had a cigar bar upstairs and you could smell smoke  a couple times.\n\n  Hotel\n\nStayed at the Best Western in Olive Branch. Not bad, convenient to few restaurants , Walmart and other nearby stores.", "images": [], "labels": [], "location": ["Memphis, TN", "Olive Branch, MS"], "categories": ["Eats", "Entertainment"], "pid": "2022-07-24-memphis-olive-branch-trip"}, {"title": "Gulf coast MS", "date": "2022-04-08", "link": "https://travelingjollys.blogspot.com/2022/04/gulf-coast-ms.html", "content": "Back on the coast. Rented an Airbnb in Bay St Luis\n\nLittle cottage in Bay St Louis, old wood frame house that was kind of charming but not worth the price to us. Not far from  Hwy 90 but windows AC/Movies not working, little noisy. \n\nPlaces we ate: \n\n Hook Restaurant in Pass Christian on Davis ave- good service. Goat cheese salad was great, Shrimp pasta was good and  bread pudding for dessert was awesome. Chell had a margarita that was good also. Place was a bit small and a little loud but service and food was great, parking tight, but right off hwy 90/ beach BLVD.\n\nWent to two places down the beach blvd in Bay St Luis at the bottom of the bridge with all the restaurants and beach front. First was Trippiangos, after 25 minutes with no one taking a drink order left there and went to Cuz's Bar & Grill.  Ordered a beer and margarita and a starter. Margarita was terrible and in a foam glass. \n\nWhite Cap restaurant in Gulfport - Good and friendly service but shrimp poboys were chewy so didn't really finish those. Not a favorite for beach eating..", "images": [], "labels": [], "location": ["Bay St. Louis, MS"], "categories": ["Hotels", "Eats"], "pid": "2022-04-08-gulf-coast-ms"}, {"title": "Dauphin Island", "date": "2022-02-28", "link": "https://travelingjollys.blogspot.com/2022/02/dauphin-island.html", "content": "This was a in the moment trip, haven\u2019t been here in a few years. First time we came and didn\u2019t have the company beach house to stay at. Decided to stay at the Gulf Breeze Motel. Got there about 10:30pm, it\u2019s February so it wasn\u2019t busy at all. Check in was quick. They have suites with kitchenettes in the same building as the office. We rented the standard 2 bed room instead\n\n, Room 212. It\u2019s an old motel but it was clean and no issues, we only stayed the one night. Had a fridge but no microwave. It\u2019s just off the main road bienville and it was $114 I believe for standard room, so we thought it was fine. \n\nNothing really new, been coming here since 2008. Took the ferry to gulf shores, temps dropped to about 48 , water was very choppy. We stayed out on deck because sitting in the car would make you sea sick, never been that way all the times we\u2019ve used it before. Didn\u2019t do much, went to the mall in Foley and ate at Lambert\u2019s restaurant, never disappoints. Drive back home. Short trip. Lots of construction going on, still reeling from hurricane Sally 2 years earlier.", "images": ["https://blogger.googleusercontent.com/img/a/AVvXsEiB5PIcFLaJBoxrxlCFnoCAyae_VT9yWeGjCoAVvtfPVhY6gyvJqUS0q-3tD9hcT4XYJs0AGNbFg9EOW6YgCE-DtcwsnSVFhOf-ax-SFu5US0dARcVfU3Slqgb-9sH9QM7LaPPjUIzoptUnqtDgkMmEHGQ0jnv15M7NQQ0bOUW0r9vyay8qwbl4aMG2SA=s320", "https://blogger.googleusercontent.com/img/a/AVvXsEhXZOzgIQoelQ-kFJh418UoXfYHKwyfI8-tgb3g1rSxNDhNuRaH39TqwhcnVv2miPtLdTpC4qjir6yBQenvpD0HGyiX8PgDZky2YY5Smk1m7L7-CHQNcAAwR66Ivdr0VmtMzH0-76Kg0kZusphBSL_6P2019UHX0Vx6l7VEm99leiMmzgiiAafxpkdA7g=s320", "https://blogger.googleusercontent.com/img/a/AVvXsEiZ5ZQr002DrZB60TjKZ7GFbhZNKcNzoMFUQZ08aar6R_XFxoVlQEYyN-j9jhZ40CRCs07pzl1YAC2GoJbcTdmupB426GZ8nBjD8ruCmEyjq9QyKTNhotJ4WZmsYrox9w_Uas0cEHNO7mnNM91e0FYX8CHrgkHkzZvWawVi_GtSuWdEqXFQ3Z_4Y9-FnQ=s320"], "labels": [], "location": ["Dauphin Island, AL"], "categories": ["Hotels"], "pid": "2022-02-28-dauphin-island"}, {"title": "New York Trip in December", "date": "2021-12-07", "link": "https://travelingjollys.blogspot.com/2021/12/new-york-trip.html", "content": "Me and Chell headed back to New York this time in December. Driving to New Orleans to stay the night and fly out of there, first stop along the way is Dons Seafood. It\u2019s a chain restaurant but the food was good. Got a couple shrimp poboys and hush puppies. Good food and reasonable prices. Good service., not busy but it\u2019s 2:30pm\n\nCheck in at Holliday Inn Express New Orleans airport south, no issues, hotel seems was clean and good water pressure, decent area close to airport. Flying Delta , lots of flights delayed. Agents not very helpful and rude. New airport has a few places to eat, Chick-fil-A etc\n\nArrived late because of delays in New Orleans . once at LaGuardia,Easy access to baggage claims and went to car services for an Uber ride. Traffic was terrible so late getting to the hotel, left our bags in lobby (very helpful with bags) and got another Uber to the Gershwin theatre, we were about 10 minutes late but the staff there was great and got us in, Wicked was great as expected. We walked back to our hotel.\n\nStaying at the Kitano Hotel in Park Avenue, much better than staying in Times Square and not too far a walk to grand central station and on to Times Square etc. no issues with hotel really, minor issue is TV guide not working. Great location, room is large enough especially for New York.\n\nRockefeller was especially crowded at night because of the Christmas tree, Saks fifth ave had a beautiful Christmas lights display on their building.\n\nPlaces we ate \n\nLan Larb on 2nd avenue and 35th st\n\nAppetizers- curry puffs and Rangoons , both were delicious and tried the Thai iced tea delicious also\n\nBack in New Orleans, ate lunch at Middendorfs before driving home.", "images": [], "labels": [], "location": ["New Orleans, LA", "New York, NY"], "categories": ["Hotels", "Eats"], "pid": "2021-12-07-new-york-trip-in-december"}, {"title": "ZZ TOP Concert", "date": "2021-08-02", "link": "https://travelingjollys.blogspot.com/2021/08/zz-top-concert.html", "content": "Went to see ZZ Top at the Brandon Amphitheater Sunday August 1st with Kathy. I wasn't sure what the seating would be like, my first time there but turns out it was really good. Had Section 102 E seats 26 and 25 which was in the PIT section, middle and the seats were on the end which was great.\n\nZZ Top put on a Great show. I didn't know the opening act, couple guys from Birmingham, they were fine. the ZZ top guys delivered perfectly. There was a nice crowd but the lines to concessions wasn't too long or didn't feel overly crowded. I look forward to going back here for another concert.\n\nWe both had a good time, there were a mix of young and old and everyone seemed to be having fun. Glad I got to see those guys play.", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgI5NIXWq4n_T-WnD6hI8Ezszm4WlwlZbdAuAdkPD9ItxQZwaDdpyrKec2k_CCOog1q3cIfozMFGiZkj5vcY5VGBEJ4BjWPMevK6AWN1UfQgLGeAdpW89gUC0KNBHDxWUkcNKzJgujWWumA/w563-h422/IMG_2765.jpg"], "labels": [], "location": ["Brandon, MS"], "categories": ["Entertainment"], "pid": "2021-08-02-zz-top-concert"}, {"title": "Trip to Biloxi May 12 2021", "date": "2021-06-13", "link": "https://travelingjollys.blogspot.com/2021/06/trip-to-biloxi-may-12-2021.html", "content": "Decided a last minute trip to Biloxi. Probably 95% of hotels were booked up. Found a room at the Best Western (Oak Manor) in Biloxi. It's directly across from the Beau Rivage. Check in was easy enough, the check-in office is right on beach blvd and the rooms are behind that. Kinda tight parking but ok. Room was clean, got a jacuzzi tub but never used it. Somewhat noisy at night but I slept ok. Chell said it was noisy. They had breakfast but I would skip if there again. Wasn't too good and it was a small crowded room. \n\nOnce again we ate at \"The Reef\" next to the southbeach hotel. It was an hour wait but we walked on the beach while we waited for a text and that was fine with us. Chell ordered the seafood platter , forgot to get the grilled. It was good just fried. I got the firecracker shrimp tacos which were good. Got the smoked tuna appetizer, also pretty good.\n\nSpent our time either walking on the beach or  driving down beach blvd. Nice weather (Hot), best to walk on the beach early morning or at sunset. Short stay, crowded right now, pretty much everywhere. Note on condos for sale, the \"seabreeze condos\" are in a nice location. Biloxi and all the other places along the beach have grown and there's a lot of places to eat, things to do and plenty of casinos which we didn't go to.", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi14v6MM5bVoaNsMcQt9FLeGUsoNNKujekyamciHgWS0cpvOIsn8EPQ7TgQJzs3X6JwgR_obUPUafpBdpY66yQnHuG9r5hqgGoTroVsVLYgXGrd4dy4sSIbH2U2Jn0u45mM7y1Zy8Dubr95/s320/IMG_2517.HEIC", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi6eCyXxKz2Or40DBhp4Q_Cb0wAwJ1u50S8sWaj7DPl-PdUy_WaCP0cym-IfaTaoW-QQhyphenhyphennIbidk5tGNVneergvMEpjx6Ae6BXyGbc8sWdpDmQlL8ja9FhDUiiEV9l0YOkae7_rB1R17GNv/s320/IMG_2509.HEIC"], "labels": [], "location": ["Biloxi, MS"], "categories": ["Hotels"], "pid": "2021-06-13-trip-to-biloxi-may-12-2021"}, {"title": "Atlanta Ga trip May 27-29,  2021", "date": "2021-06-06", "link": "https://travelingjollys.blogspot.com/2021/06/atlanta-ga-trip-may-27-29-2021.html", "content": "We stayed at\nthe Hotel Indigo Atlanta Downtown. Hotel was nice, directly on peachtree street\nwhich is walking distance of the aquarium, coke museum and other downtown\nplaces to eat etc. We didn't do any fine dining, just ate at a nearby cafe,\ndecent cafe. Johnny Rockets, liked the 50's style and food was\n\npretty good. Traffic was very busy and frustrating if you don't already know where to park. The aquarium was nice, not too crowded this Friday, had a couple\nfree 4D theaters to watch which was kinda cool, only saw the happy feet. The\ncoke museum was pretty fascinating because of the history. I wouldn't say the\nguides were fabulous, but the museum was great. A lot to see.\n\nOur favorite for this trip was \"Medieval Times\" outside of\nAtlanta. We got there about 6:45 for the 7:30 show. Everything was great from\nthe food to the show. Medieval Times is part of a Mall, we didn't have time to\nlook around but there is a Dave and Busters there as well. The mall was closed\nwhen our show was over and it was pouring rain. The drive back to downtown was\nkinda dreadful because of traffic and rain.\n\nHeaded back home about 10:30 Sat morning, ate a Cracker Barrel along the way,\nfairly long wait.\n\nSince I've seen the Coke museum now I don't think I'd be going back to Atlanta,\nthere are other places I'd rather visit to see the same places to eat and\nvisit.", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhOvu1Ff_cT9MuEvm6GpqcQZp4o2YJiDYBnqfO3Ll7EL6Mc-91LYMqm1ybIBcqsChDRuL_0IlVREAQDrLmTmvW6ctUbt5Ue1BM3KTsHTn9E2NLR26xMqV1eEHcRlf5XH48jhjYBH-tjCYyY/w503-h240/IMG_2425.jpg"], "labels": [], "location": ["Atlanta, GA"], "categories": ["Hotels", "Eats", "Entertainment"], "pid": "2021-06-06-atlanta-ga-trip-may-27-29-2021"}, {"title": "Back to Salt Lake for my flight back to Mississippi side trip (Bonneville Salt Flats)", "date": "2020-12-04", "link": "https://travelingjollys.blogspot.com/2020/12/back-to-salt-lake-for-my-flight-back-to.html", "content": "Trip to Salt Lake City\n\nBack to Salt Lake for my flight back to Mississippi\n\nThought we'd go to the Bonneville Salt Flats since we got an early start. It's about 1 1/2 hours past Salt Lake City so not too far out of the way and I'd never seen the salt flats. There's a long drive were you see salt formations on the side of the Interstate. Pretty cool, you can see where people would pull off the Interstate and drive out on the flats.\n\nThe actual start of the Bonneville Salt Flats started at the rest stop. The sign is there and you just have the large area of salt flats with the mountain backdrop. Pretty cool, not overly exciting compared to some other things we've seen around BUT it's pretty amazing knowing how it formed and this is where they hold Speed week in the summer and have set some world record speeds here. A little surprised how hard the salt surface was as we walked on it. Went further down to the speedway exit and drove out on the flats just to see. We came we saw, we headed back. FYI if you're low on gas , fuel up before heading back down I80, not a lot of gas stations.\n\nGot to our Hotel, decided to try Holiday INN express (East)- Airport. Very convenient to the airport, like some of the others. It's a nice hotel. Check was great, great customer service (Weston). Clean room\n\nWe decided to go to the Temple Square because it's a beautiful place. Unfortunately, the square is gated off because of construction, so we walked over to the Mall which is beautiful itself. Lots of stores of course and restaurants (Cheesecake factory, blue lemon, plenty of others) , got some deserts from the kneading bakery. \n\nand of course since we were in Salt Lake , I wanted to eat at the Red Iguana and once again it didn't disappoint. Got the homemade Guac which was great and a mole sampler, awesome. Note to self: Way too much food. We could easily have shared a plate since we had chips and the Guac appetizer. Just really good authentic mexican food and the server was great as well. Back to the Hotel to digest and relax before my flight back tomorrow.", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgkCT0OBI5sMXmKM2gkVRAKeSCK0RvKmMA8yUWoUPU-_m0ERppavZ64dKxwmFyOJKauxvNu-1XITajOEliDfg7UmfKN09nsk5qQb2Ovr8ZNlXvqCOkui1ea5zZsXfSDULLKkHNr43HaxWE4/w510-h169/IMG_1079.HEIC", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhEHwhm3sj0-BouJJAXeicyAlZJ4l3r5nYG6_YYjsAYxDUtim2DBY_88zH-ujcMbW4Fm73rQZdm4gIMQZQHovv5mciBhZwtiLHwxNG6ZjBexbpbtZuwf96U6Ed2dI0K7QaAl21FQi2ojmfB/s320/IMG_1086.HEIC", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhZm_XuwW-nUvx7MMmCQQ5dfnYq44MgeVWNcE7M3j_wsD1l2bVxFxjGEJEZ7ZCCmrmmMudI4LWUJVL0IstkQwCnpvi8qB5dzwwtI1hfyhOS9s4bah7Dr2BvHcqQBmMYcSg2-5sh4dEhehJ3/w316-h320/IMG_1084.HEIC", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjhwXUoarMsrYEdx1-OAvaMuDQBRxoBjCRf_l-V5W84hoDQNoUgf3Pw94kqnhBQkz4zdMfV3KN8CrVylWnLWrDBGM8-s2yLiTPgRvLlO1LLMR6IROb8q3t0PmwTBF6EH5GGBVDAnbaW5x1O/s320/IMG_1091.HEIC"], "labels": [], "location": ["Salt Lake City, UT"], "categories": ["Entertainment"], "pid": "2020-12-04-back-to-salt-lake-for-my-flight-back-to-mississip"}, {"title": "Another Trip to Jackson Hole, WY", "date": "2020-11-29", "link": "https://travelingjollys.blogspot.com/2020/11/trip-to-jackson-hole-wy.html", "content": "Another trip to Jackson Hole, Wy.\n\nDrove from Pocatello ID to Jackson Hole, took the route through Swan Valley to Alpine, beautiful drive via Hwy 26 by the Pallisades reservoir onto Hoback junction and to Jackson Hole.\n\nwe went this route to avoid going over Teton pass, which probably would have been ok  on this date, the roads were mostly dry. Were going to book \"The Lodge\" but they upped the price about $50 within a couple days, so decided to book with \"the Wyoming Inn\", about $145 a night. It was good choice. Nice place, nice room and they have a restaurant inside. I would say the only downside was there wasn't a lot of parking space. We didn't eat dinner their but we did eat breakfast and it was great.\n\nOnly ate lunch in Jackson Hole (at Mary Piglets) again, still good. We spent most of our time driving around time, some walking around Jackson square and the rest driving through the Grand Teton National park. Pretty much beautiful places to see all along the drive. We typically stop at some of the turn outs for views of the Teton mountains, Moose junction, Jenny Lake, it's all picturesque. Happen to see a fox looking for food around a bench out at Moose junction. Herds of Elk were down from the mountain grazing.", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjRuhYhpbLHhyphenhyphencz9bWLitiZxkwtBKSogyAhUJs2gCPnGmwxbl1Hc_vWcLeKmiRyZg66FXWoC2RCo7-WOdFDUP6NPdXfrvHrlJjyi5OxjVVpKKrUdFKxvoHFxARU4V_pO9SOnk7p5DQYt-fk/w633-h370/IMG_1009.HEIC", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgIjobriMusd4BLAIvfhTEdY0-WWQva2_t6hk-yGQ90sfIpYAK1HaQkH_x32K2FXgjjU4HRTvjvomQL7dp1pZ6HOM4Hea39YmrCCGuJN2XYcud8huuKBH2k5S_m3YTPjkRuHskntsFmSr8G/w631-h474/IMG_1014.HEIC"], "labels": [], "location": ["Jackson Hole, WY"], "categories": ["Hotels"], "pid": "2020-11-29-another-trip-to-jackson-hole-wy"}, {"title": "Salt Lake City  Airport and hotel", "date": "2020-09-26", "link": "https://travelingjollys.blogspot.com/2020/09/salt-lake-city-airport-and-hotel.html", "content": "Time to go back to Mississippi. Didn\u2019t take a scenic route; just ready to get to the hotel and relax. We stayed at the Radisson airport hotel. No issues at all, reasonable cost and the hoteL shuttle was on time and very convenient. We ate at the restaurant inside the hotel, not as nice as the website shows but good enough for food if you don\u2019t want to go out anywhere.\n\nSLC airport is still working on the new airport project to be completed in 2024. No issues checking in, shuttle dropped off at the international level, Check-in for all airlines currently on 2nd level all in same area. Checked in with American and after general security screening had about a 20 minute walk to G gates.", "images": [], "labels": [], "location": ["Salt Lake City, UT"], "categories": ["Hotels", "Eats"], "pid": "2020-09-26-salt-lake-city-airport-and-hotel"}, {"title": "Jackson Hole WY The Grand Tetons and back to Yellowstone", "date": "2020-09-16", "link": "https://travelingjollys.blogspot.com/2020/09/jackson-hole-wy-grand-tetons-and-back.html", "content": "Still more to see, we woke early on Saturday 9/12/20 and drove from Pocatello ID to Jackson Wyoming taking the more scenic route through swan valley and around the Palisades reservoir and Snake River, which by itself would be enough. Just a beautiful ride and gorgeous foliage. There are campgrounds along the way. We stopped at a few turnouts for pictures.\n\n                                -Drive through swan valley around palisades reservoir/snake river\n\nWe drove on to Jackson Hole, only my 2nd time here but a favorite place for me. The Tetons mountain ranges and Park are beautiful any time of the year. First time there it was snow covered and this time more of a fall look. It's also more expensive in September than it was in March. \n\nWe drove around looking at the Tetons, Jenny Lake (beautiful place), did a little hiking along with a boat ride across the lake. Short 10 minute ride or you can hike about 5 miles around the lake. There are hiking trails that lead to cascade falls and other landscapes. We hiked back to the boat entrance for a ride back to the other side. Long wait, about an hour to get to the boat.\n\n                                  -overlooking Snake River with the Tetons in the background\n\nEasy to park and walk around in Jackson Hole, plenty places to eat. I guess a favorite of mine since I ate there both trips is \"the Merry Piglets\" Mexican restaurant., but seems to be other great places, We just didn't eat out much.\n\nSaturday night we  stayed at the more reasonable Super8 in Jackson Hole, no issues with checking in or the room really. It's definitely not \"The Lodge\", which is an awesome place to stay but we stayed there last year in March when the rates were very reasonable. If you stay during peak season you'll pay for it.\n\nWe woke early again Sunday morning and made our way toward Yellowstone's south entrance. Not as much to see early in but you get there. We decided to see a few areas we didn't see the first time, the different geysers, black sand, falls, fountain paint pot etc. All great to see. Saw some bison which always draws a crowd. On the way back toward the West entrance we went through the I believe was the firehole scenic route, not sure about the name but it's a 2 mile one way Loop and it's awesome. \n\nSaw some elk grazing and more bison before getting back to the entrance. Hungry so we stopped and ate at the buffalo bar and restaurant. Not a lot of seating, sat outside. Food was pretty good, a little pricey for lunch but probably most places here are.\n\nIsland Park - visited the Big Springs area and lake on the way back home. Beautiful clear water if you just want to stop and take a break. You can see the springs bubbling up.\n\nWe saw a lot in a short period of time. It's a little tiring but well worth the driving and time with my wife.", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiukKiDGCeDhYogqmgXcBS46t-iutMBmlSKYLKCijB1QpkVG9-zbECwNLJRPJxzPG_33MTgHYclc_Z1XPDG9AuBbd5QqK-ZP6m0r4p5aWXhXmf9O3vnPxc8SDFIav1uE1clAmxQH5JgIv_X/w646-h283/palisades-fall.jpg", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgMG-sQ478PsHgzP8vhuGWttRH4H2rub_O-H8bpiH_tuFZEdraqxwUP4Ip82gxf_UG0IhdYbYyngveOMzE2fpLysIkpbSXiVMxTwjdzGKsnRJrpIw4u31F84orHEnhudSXEWPdPZcmVUNT1/w648-h331/snake+river.jpg", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh7uYc65pSFcQQ_givX2oMtyIicdpIuzGMP7Pr2e3Dv2Iup7Bw5D-aeFA6V2l77z20-do7G659y044hoTob-Z2j8geKEpKKazZS9YJfo1KQ6IxrlRKY0IhPUIB-oQmoSt5M0njhawrbmlo9/w268-h320/bison.jpg"], "labels": [], "location": ["Jackson Hole, WY", "Yellowstone National Park"], "categories": ["Entertainment"], "pid": "2020-09-16-jackson-hole-wy-the-grand-tetons-and-back-to-yell"}, {"title": "Yellowstone - West Entrance", "date": "2020-09-16", "link": "https://travelingjollys.blogspot.com/2020/09/yellowstone-west-entrance.html", "content": "We drove from Pocatello,ID to Mesa Falls which is in Ashton,Idaho and then on to Yellowstone at the West Entrance. It's about a 2 hour drive to Mesa Falls, which is stunning itself, then on to the West Yellowstone entrance, another hour, which a small portion takes you through Montana. I didn't realize 96% of Yellowstone was in Wyoming.\n\nFor this trip we just wanted to see the Falls and since we were pretty close to Yellowstone, we decided to go there. It was my first time there and it didn't disappoint. We stopped to eat in the town of Yellowstone, wasn't impressed by the place we ate at (Outpost Restaurant), Lot of tourist type eateries and shopping, kinda crowded as you might expect, but a nice town.\n\n I think everyone wants to see the \"old faithful\" geyser and so did I. It wasn't as crowded this day which was good. It did get pretty cold and started snowing at one point and we didn't exactly dress for it but Old Faithful was on schedule and beautiful to see. We spent a few minutes in the general store waiting, they have plenty of Yellowstone souvenirs if you want one. Overall it was a great experience with Chell and getting to see the beauty that's out there. Love seeing any wildlife in their natural habitats.\n\n-Mesa Falls\n                                                              -geyser at Yellowstone", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiLyt2FjQTQSeybxOW_L3ELjn8wu5CCvN185Rkop9QWhyphenhyphenKL10CA1S5L1B0Wn9CLCxmw-sEXFye32-Iq-AK56LyHT9SK1x2yNWdwlhZmy8-r_rXd-im3Pjz_4LFRAp7yX7StJeJ3DalUngdF/w660-h477/mesa+falls.jpg", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhK4ZmzIEBe6Uc7U3WboY8CZoLmINpGEsqNadRUzalLqovxaRJn8_RDCPRqO6b_TMLpCubx4z-bVaWLdruNFUoH71ueCNx7RG88uLbqCz1S8Gmac0y3F92B7CvpqJtQnmr-XjctW8IM0Olr/w656-h370/Yellowstone+Geyser.jpg"], "labels": [], "location": ["Yellowstone National Park", "Ashton, ID"], "categories": ["Entertainment"], "pid": "2020-09-16-yellowstone-west-entrance"}, {"title": "Bilox, MS 2nd Trip", "date": "2020-07-31", "link": "https://travelingjollys.blogspot.com/2020/07/bilox-ms-2nd-trip.html", "content": "Me and Chell took another trip to Biloxi. Stayed at the Hyatt Place, Good hotel across the street from the beach. Nothing really special. Price was $139 without upgrading to Ocean View, which I upgraded but you couldn't see the ocean. Trees were blocking the view completely. Ate at The Reef again, crawfish cornbread was awesome,\n\n still good as before. Drove down Beach Blvd from Biloxi to Pass Christian, drove through Bay St Louis and down Scenic Beach Blvd. On the South side was a Nicer drive, had a few restaurants and nice houses and beach access along with a couple nice RV parks and a state park. Dead Ends at a Casino. Nice and quaint.\nWe purchased some fresh Shrimp from Pass Christian Purchasing on Lake Harbor in Pass Christian. There was quite a few shrimp boats that sell directly to 2 or 3 vendors here and you can purchase shrimp, fish, crabs etc. Jumbo Shrimp $6 lb, friendly service.\nNice day, did a good bit of driving up and down beach blvd, walked on the beach some. Ate at Shaggys on the water, pretty good. Maybe not quite as good as the Reef but still very good, grilled Mahi Mahi  tacos and blacked shrimp.", "images": ["https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgeZDwjYNL9U_km1ggxiRya_KQkKeUOY7HKPapIYSV3JC7ZgvlXsV59lQj6HvYsF2D3tjbo2DrOAD9I1sN2LP71Tg0J19CrbncJWwpBlMMC2QX5GRHuqTQ7gyjK7qRGjGgWc4XfMOrlM1ez/s640/IMG_0170.jpg", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiLykPqtoQL8WaY55PpY9FpYgMHHtcCeuNvXXnauZoYi0W5aOEo6IB-eDGLND5vkD8CWP8XRNVzAQtM317cO9Yffcjh9Z7aIgN4VGz0vEA9dPzXDd_WsCv84eVSYcn4e-_PvyU-Pg3U_eVO/s640/IMG_0168.jpg", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhutXYh7MTInCMQZBexwQ71DJI6cJbauzsXZ_vtPX890M9j29yDWII2REbAqeAL0Yu5O6jeg7gBPNYXlxabvXP3ITkK9n7I0Cdq_1f7061e1EO3LsLS_17ULKdVtNoVpJUCfNxVz0ziqnuV/s640/IMG_0165.jpg", "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiuiVoX6n_tVzXcdIS0rYgvzv4G3i0LOapc83NERzSL82vLdkro7dBX-pUwwgwbEXOCKxslKfqXAo8Km8tHX9dYzeZwq1gKgdBpSpfsnpHALS-OAmLJF1-lcq8Cr5FZH9tXtfEzZ-knkrWr/s640/IMG_0167.jpg"], "labels": ["Biloxi"], "location": ["Biloxi, MS"], "categories": ["Hotels", "Eats"], "pid": "2020-07-31-bilox-ms-2nd-trip"}, {"title": "Biloxi,MS May 18 2020", "date": "2020-05-19", "link": "https://travelingjollys.blogspot.com/2020/05/biloxi-may-18-2020.html", "content": "Traveled to Biloxi with Chell\n\nStayed at South Beach Hotel (On the Beach)\n\n-Nice hotel, rate was $157 for standard suite facing the street. Nice Room with kitchen\n\n - can walk out of hotel to the beach.\n\nRestaurant next to Hotel (The Reef) , was really good, ate there for lunch and dinner. Can sit outside overlooking the ocean.\n\nWinn Dixie up the road on beach blvd has a nice grocery store and Wine and Spirits store (big collection)\n\nboard walk running along beach is nice.\n\nDrove up and down Beach Blvd from Biloxi to Long Beach.", "images": [], "labels": [], "location": ["Biloxi, MS"], "categories": ["Hotels", "Eats"], "pid": "2020-05-19-biloxi-ms-may-18-2020"}];
+const STORAGE_KEY = 'tj_posts_v1';
+
+function loadPosts(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){
+    try { return JSON.parse(raw); } catch(e){ /* fall through to reseed */ }
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_POSTS));
+  return JSON.parse(JSON.stringify(SEED_POSTS));
+}
+function savePosts(posts){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+}
+
+let POSTS = loadPosts();
+
+const grid = document.getElementById('grid');
+const searchInput = document.getElementById('searchInput');
+const locationFilter = document.getElementById('locationFilter');
+const catToggles = document.getElementById('catToggles');
+const resultCount = document.getElementById('resultCount');
+const emptyState = document.getElementById('emptyState');
+const modalOverlay = document.getElementById('modalOverlay');
+const modalContent = document.getElementById('modalContent');
+const addTripBtn = document.getElementById('addTripBtn');
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const importFile = document.getElementById('importFile');
+
+let activeCats = new Set();
+let activeLocation = '';
+let searchTerm = '';
+
+function refreshStats(){
+  const allLocations = new Set();
+  POSTS.forEach(p => p.location.forEach(l => allLocations.add(l)));
+  const years = new Set(POSTS.map(p => p.date.slice(0,4)));
+  document.getElementById('odometerRow').innerHTML = `
+    <div class="odo"><span class="num">${POSTS.length}</span><span class="label">Trips Logged</span></div>
+    <div class="odo"><span class="num">${allLocations.size}</span><span class="label">Places</span></div>
+    <div class="odo"><span class="num">${years.size}</span><span class="label">Years</span></div>
+  `;
+  const currentVal = locationFilter.value;
+  locationFilter.innerHTML = '<option value="">All Locations</option>';
+  [...allLocations].sort().forEach(loc => {
+    const opt = document.createElement('option');
+    opt.value = loc;
+    opt.textContent = loc;
+    locationFilter.appendChild(opt);
+  });
+  if([...allLocations].includes(currentVal)) locationFilter.value = currentVal;
+}
+
+function excerpt(text, len=150){
+  const clean = text.replace(/\s+/g,' ').trim();
+  return clean.length > len ? clean.slice(0,len).trim() + '…' : clean;
+}
+
+function formatDate(d){
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+}
+
+function render(){
+  refreshStats();
+  const sorted = [...POSTS].sort((a,b) => b.date.localeCompare(a.date));
+  const term = searchTerm.toLowerCase();
+  const filtered = sorted.filter(p => {
+    if(activeLocation && !p.location.includes(activeLocation)) return false;
+    if(activeCats.size > 0){
+      const hasAll = [...activeCats].every(c => p.categories.includes(c));
+      if(!hasAll) return false;
+    }
+    if(term){
+      const haystack = (p.title + ' ' + p.content + ' ' + p.location.join(' ')).toLowerCase();
+      if(!haystack.includes(term)) return false;
+    }
+    return true;
+  });
+
+  resultCount.textContent = `SHOWING ${filtered.length} OF ${POSTS.length} TRIPS`;
+  grid.innerHTML = '';
+  emptyState.style.display = filtered.length ? 'none' : 'block';
+
+  filtered.forEach((p, i) => {
+    const mile = String(filtered.length - i).padStart(3,'0');
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const imgHtml = p.images.length
+      ? `<img class="thumb" src="${p.images[0]}" alt="${p.title}" loading="lazy">`
+      : `<div class="no-photo"></div>`;
+
+    card.innerHTML = `
+      <div class="stub">MI ${mile}</div>
+      ${imgHtml}
+      <div class="card-body">
+        <div class="card-meta"><span>${formatDate(p.date)}</span></div>
+        <h3 class="card-title">${p.title}</h3>
+        <div class="loc-chips">${p.location.map(l=>`<span class="loc-chip">${l}</span>`).join('')}</div>
+        <div class="cat-chips">${p.categories.map(c=>`<span class="cat-chip ${c}">${c}</span>`).join('')}</div>
+        <p class="excerpt">${excerpt(p.content)}</p>
+        <div class="card-footer">
+          <button class="btn-read" data-pid="${p.pid}">Read Full Entry</button>
+          <button class="btn-icon" data-edit="${p.pid}" title="Edit">✎</button>
+          <button class="btn-icon danger" data-del="${p.pid}" title="Delete">🗑</button>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  grid.querySelectorAll('.btn-read').forEach(btn => {
+    btn.addEventListener('click', () => openModal(btn.dataset.pid));
+  });
+  grid.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => openForm(btn.dataset.edit));
+  });
+  grid.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => deletePost(btn.dataset.del));
+  });
+}
+
+function findPost(pid){ return POSTS.find(p => p.pid === pid); }
+
+function deletePost(pid){
+  const p = findPost(pid);
+  if(!p) return;
+  if(!confirm(`Delete "${p.title}"? This can't be undone (unless you have a backup export).`)) return;
+  POSTS = POSTS.filter(x => x.pid !== pid);
+  savePosts(POSTS);
+  render();
+}
+
+function openModal(pid){
+  const p = findPost(pid);
+  if(!p) return;
+  const photosHtml = p.images.length
+    ? `<div class="modal-photos">${p.images.map(src=>`<img src="${src}">`).join('')}</div>`
+    : '';
+  modalContent.innerHTML = `
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+    ${photosHtml}
+    <div class="modal-body">
+      <div class="loc-chips" style="margin-bottom:10px;">${p.location.map(l=>`<span class="loc-chip">${l}</span>`).join('')}</div>
+      <h2>${p.title}</h2>
+      <div class="cat-chips" style="margin-bottom:14px;">${p.categories.map(c=>`<span class="cat-chip ${c}">${c}</span>`).join('')}</div>
+      <div class="modal-content-text">${p.content}</div>
+      ${p.link ? `<a class="modal-link" href="${p.link}" target="_blank">View original post ↗</a>` : ''}
+    </div>
+  `;
+  modalOverlay.classList.add('open');
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+}
+function closeModal(){ modalOverlay.classList.remove('open'); }
+modalOverlay.addEventListener('click', e => { if(e.target === modalOverlay) closeModal(); });
+
+// ---------- ADD / EDIT FORM ----------
+function openForm(pid){
+  const editing = !!pid;
+  const p = editing ? findPost(pid) : {title:'',date:new Date().toISOString().slice(0,10),location:[],categories:[],content:'',images:[],link:''};
+
+  modalContent.innerHTML = `
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+    <div class="modal-body">
+      <h2>${editing ? 'Edit Trip' : 'Add a Trip'}</h2>
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Title</label>
+          <input type="text" id="f_title" value="${p.title.replace(/"/g,'&quot;')}" placeholder="e.g. Weekend in Savannah">
+        </div>
+        <div class="form-two-col">
+          <div class="form-row">
+            <label>Date</label>
+            <input type="date" id="f_date" value="${p.date}">
+          </div>
+          <div class="form-row">
+            <label>Location(s)</label>
+            <input type="text" id="f_location" value="${p.location.join(', ')}" placeholder="Savannah, GA">
+            <div class="hint">Comma-separated if more than one stop</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Categories</label>
+          <div class="form-cat-check">
+            <label><input type="checkbox" value="Hotels" ${p.categories.includes('Hotels')?'checked':''}> Hotels</label>
+            <label><input type="checkbox" value="Eats" ${p.categories.includes('Eats')?'checked':''}> Eats</label>
+            <label><input type="checkbox" value="Entertainment" ${p.categories.includes('Entertainment')?'checked':''}> Entertainment</label>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Notes</label>
+          <textarea id="f_content" placeholder="Where you stayed, what you ate, what you did...">${p.content}</textarea>
+        </div>
+        <div class="form-row">
+          <label>Photo URLs</label>
+          <input type="text" id="f_images" value="${p.images.join(', ')}" placeholder="https://... , https://...">
+          <div class="hint">Comma-separated image links</div>
+        </div>
+        <div class="form-row">
+          <label>Source link (optional)</label>
+          <input type="text" id="f_link" value="${p.link || ''}" placeholder="https://...">
+        </div>
+        <div class="form-actions">
+          <button class="admin-btn secondary" id="cancelFormBtn">Cancel</button>
+          <button class="admin-btn" id="saveFormBtn">${editing ? 'Save Changes' : 'Add Trip'}</button>
+        </div>
+      </div>
+    </div>
+  `;
+  modalOverlay.classList.add('open');
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('cancelFormBtn').addEventListener('click', closeModal);
+  document.getElementById('saveFormBtn').addEventListener('click', () => {
+    const title = document.getElementById('f_title').value.trim();
+    const date = document.getElementById('f_date').value;
+    if(!title || !date){ alert('Title and date are required.'); return; }
+    const location = document.getElementById('f_location').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const categories = [...modalContent.querySelectorAll('.form-cat-check input:checked')].map(c=>c.value);
+    const content = document.getElementById('f_content').value.trim();
+    const images = document.getElementById('f_images').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const link = document.getElementById('f_link').value.trim();
+
+    if(editing){
+      Object.assign(p, {title, date, location, categories, content, images, link});
+    } else {
+      const pid = `${date}-${title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')}-${Date.now()}`;
+      POSTS.push({pid, title, date, location, categories, content, images, link});
+    }
+    savePosts(POSTS);
+    closeModal();
+    render();
+  });
+}
+
+addTripBtn.addEventListener('click', () => openForm(null));
+
+// ---------- EXPORT / IMPORT ----------
+exportBtn.addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(POSTS, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `travelingjollys-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+importBtn.addEventListener('click', () => importFile.click());
+importFile.addEventListener('change', () => {
+  const file = importFile.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if(!Array.isArray(data)) throw new Error('not an array');
+      if(!confirm(`Import ${data.length} trips? This replaces everything currently on this page.`)) return;
+      POSTS = data;
+      savePosts(POSTS);
+      render();
+    } catch(e){
+      alert('That file doesn\'t look like a valid trip export.');
+    }
+  };
+  reader.readAsText(file);
+  importFile.value = '';
+});
+
+catToggles.querySelectorAll('.cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const cat = btn.dataset.cat;
+    if(activeCats.has(cat)){ activeCats.delete(cat); btn.classList.remove('active'); }
+    else { activeCats.add(cat); btn.classList.add('active'); }
+    render();
+  });
+});
+locationFilter.addEventListener('change', () => { activeLocation = locationFilter.value; render(); });
+searchInput.addEventListener('input', () => { searchTerm = searchInput.value; render(); });
+
+render();
+</script>
+</body>
+</html>
